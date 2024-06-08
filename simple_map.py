@@ -21,7 +21,6 @@ db_connection = mysql.connect(
 
 cursor = db_connection.cursor()
 
-# Fetching data from ConstantMeasurements table for rides_data with idRide >= 8
 query_rides = """
 SELECT idRide, latitude, longitude, timeStamp
 FROM ConstantMeasurements
@@ -31,7 +30,6 @@ ORDER BY idRide, timeStamp;
 cursor.execute(query_rides)
 ride_results = cursor.fetchall()
 
-# Fetching car distance measurements
 query_car = """
 SELECT idRide, timeStamp
 FROM CarDistanceMeasurements
@@ -41,7 +39,6 @@ ORDER BY idRide, timeStamp;
 cursor.execute(query_car)
 car_results = cursor.fetchall()
 
-# Fetching crash measurements
 query_crash = """
 SELECT idRide, timeStamp, roll, pitch, yaw
 FROM CrashMeasurements
@@ -64,15 +61,13 @@ for idRide, latitude, longitude, timeStamp in ride_results:
     rides[idRide].append((latitude, longitude))
     ride_timestamps[idRide].append((latitude, longitude, timeStamp))
 
-# Creating a folium map with zoom on Lyon
 m = folium.Map(location=[45.75, 4.85], zoom_start=12)
 for ride in rides.values():
     folium.PolyLine(ride, color="green", weight=2.5, opacity=1).add_to(m)
 
-# Finding the closest points in time for car distance measurements and adding red lines
+
 for idRide, car_timeStamp in car_results:
     if idRide in ride_timestamps:
-        # Get the two closest points in time
         closest_points = sorted(ride_timestamps[idRide], key=lambda x: abs((x[2] - car_timeStamp).total_seconds()))[:2]
         if len(closest_points) == 2:
             folium.PolyLine(
@@ -82,10 +77,8 @@ for idRide, car_timeStamp in car_results:
                 opacity=1
             ).add_to(m)
 
-# Adding crash pins to the map
 for idRide, crash_timeStamp, roll, pitch, yaw in crash_results:
     if idRide in ride_timestamps:
-        # Get the closest point in time
         closest_point = min(ride_timestamps[idRide], key=lambda x: abs((x[2] - crash_timeStamp).total_seconds()))
         folium.Marker(
             location=[closest_point[0], closest_point[1]],
@@ -93,5 +86,5 @@ for idRide, crash_timeStamp, roll, pitch, yaw in crash_results:
             icon=folium.Icon(color='red', icon='info-sign')
         ).add_to(m)
 
-m.save("rides_map.html")
-print("Map has been created and saved as rides_map.html")
+m.save("simple_map.html")
+print("Map has been created and saved")

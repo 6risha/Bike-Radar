@@ -138,11 +138,11 @@ for idRide, crash_timeStamp, roll, pitch, yaw in crash_results:
 
 for square in squares.values():
     danger_level = square[4] / num_rides
-    if danger_level > 0.3:
+    if danger_level > 0:
         square[5] = 'yellow'
-    if danger_level > 0.7:
+    if danger_level > 0.1:
         square[5] = 'orange'
-    if danger_level >= 1:
+    if danger_level >= 0.3:
         square[5] = 'red'
 
 
@@ -150,8 +150,8 @@ for top_left, top_right, bottom_right, bottom_left, pints, color in squares.valu
     folium.Polygon(locations=[top_left, top_right, bottom_right, bottom_left, top_left],
                    color=color,
                    fill=True,
-                   fill_opacity=0.3
+                   fill_opacity=0.4
                    ).add_to(m)
 
 m.save("map_with_danger_levels.html")
-print("Map has been created and saved as map_with_danger_levels.html")
+print("Map has been created and saved")

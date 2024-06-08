@@ -51,7 +51,7 @@ if __name__ == "__main__":
 
     last_ride_id = last_ride_data[0]
     # last_ride_end = last_ride_data[4]
-    last_ride_end = datetime(2024, 6, 6, 12, 0)
+    last_ride_end = datetime(2024, 6, 8, 12, 0)
     print(last_ride_id, last_ride_end, type(last_ride_end))
 
     cursor.close()
@@ -102,7 +102,7 @@ if __name__ == "__main__":
         timestamp = to_proper_datetime(elem[0])
 
         if timestamp is None:
-            print(f"::: Invalid ConstantMeasurement: {elem}")
+            print(f"::: Invalid CST value: {elem}")
             continue
 
         if timestamp < last_ride_end:
@@ -127,7 +127,7 @@ if __name__ == "__main__":
         timestamp = to_proper_datetime(elem[0])
 
         if timestamp is None:
-            print(f"::: Invalid CarDistanceMeasurement: {elem}")
+            print(f"::: Invalid CAR value: {elem}")
             continue
 
         try:
@@ -145,7 +145,7 @@ if __name__ == "__main__":
         timestamp = to_proper_datetime(elem[0])
 
         if timestamp is None:
-            print(f"::: Invalid CrashMeasurement: {elem}")
+            print(f"::: Invalid CRASH value: {elem}")
             continue
 
         if timestamp < last_ride_end:
