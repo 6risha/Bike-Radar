@@ -14,7 +14,10 @@ def to_proper_datetime(date_time_str):
         date_time_obj = date_time_obj.replace(hour=additional_hour)
         return date_time_obj
     except ValueError:
-        return datetime.strptime(date_time_str, '%m/%d/%Y %H:%M:%S')
+        try:
+            return datetime.strptime(date_time_str, '%m/%d/%Y %H:%M:%S')
+        except ValueError:
+            return None
 
 
 if __name__ == "__main__":
@@ -77,7 +80,16 @@ if __name__ == "__main__":
     for ride in rides:
         timeStart = to_proper_datetime(ride[0])
         timeEnd = to_proper_datetime(ride[1])
-        username = ride[2]
+        if timeStart is None or timeEnd is None:
+            print(f"::: Invalid Ride: {ride}")
+            continue
+
+        try:
+            username = ride[2]
+            if username is None:
+                username = 'grisha'
+        except IndexError:
+            username = 'grisha'
 
         if timeStart > last_ride_end:
             # 3 - CST meas, 4 - CAR meas, 5 - CRASH meas
@@ -88,8 +100,14 @@ if __name__ == "__main__":
     # INDEX 3
     for elem in constant_measurements:
         timestamp = to_proper_datetime(elem[0])
+
+        if timestamp is None:
+            print(f"::: Invalid ConstantMeasurement: {elem}")
+            continue
+
         if timestamp < last_ride_end:
             continue
+
         longitude = float(elem[1])
         latitude = float(elem[2])
         altitude = int(float(elem[3]))
@@ -107,6 +125,11 @@ if __name__ == "__main__":
     # INDEX 4
     for elem in car_distance_measurements:
         timestamp = to_proper_datetime(elem[0])
+
+        if timestamp is None:
+            print(f"::: Invalid CarDistanceMeasurement: {elem}")
+            continue
+
         try:
             car_dist = int(elem[1])
         except ValueError:
@@ -120,6 +143,11 @@ if __name__ == "__main__":
     # INDEX 5
     for elem in crash_measurements:
         timestamp = to_proper_datetime(elem[0])
+
+        if timestamp is None:
+            print(f"::: Invalid CrashMeasurement: {elem}")
+            continue
+
         if timestamp < last_ride_end:
             continue
         try:
