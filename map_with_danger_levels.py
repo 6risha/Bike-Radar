@@ -5,9 +5,8 @@ import mysql.connector as mysql
 from dotenv import load_dotenv
 from geopy.distance import geodesic
 from datetime import datetime, timedelta
-from decimal import Decimal
 
-
+print("::: Script started")
 load_dotenv()
 
 INSA_HOST = os.getenv('INSA_HOST')
@@ -23,6 +22,7 @@ db_connection = mysql.connect(
     password=INSA_PASSWORD,
     database=INSA_DB
 )
+print("::: Connected to DB")
 
 current_datetime = datetime.now()
 two_weeks_ago = current_datetime - timedelta(weeks=2)
@@ -60,6 +60,7 @@ crash_results = cursor.fetchall()
 
 cursor.close()
 db_connection.close()
+print("::: Data extracted")
 
 # Create the grid first
 m = folium.Map(location=[45.75, 4.85], zoom_start=12)
@@ -82,14 +83,11 @@ for lat in lat_points:
         center_lon = lon + lon_step / 2
         center_point = (center_lat, center_lon)
 
-        square = [top_left, top_right, bottom_right, bottom_left, 0, 'grey']
+        # coordinates, points, color, amount of rides passed through this square
+        square = [top_left, top_right, bottom_right, bottom_left, 0, 'grey', set()]
         squares[center_point] = square
         # folium.CircleMarker(location=center_point, radius=2, color='red', fill=True, fill_opacity=1).add_to(m)
-
-num_rides = len(ride_results)
-num_cars = len(car_results)
-num_crashes = len(crash_results)
-
+print("::: Grid created")
 
 # "locations" is for display, "ride_timestamps" of for the following analysis
 ride_timestamps = {}
@@ -102,9 +100,13 @@ for idRide, timeStamp, latitude, longitude in ride_results:
     locations[idRide].append((latitude, longitude))
     square = squares[tuple(min(squares.keys(), key=lambda x: geodesic((latitude, longitude), x).meters))]
     square[5] = 'green'
+    if idRide not in square[6]:
+        square[6].add(idRide)
 
 for ride in locations.values():
     folium.PolyLine(ride, color="blue", weight=2.5, opacity=1).add_to(m)
+
+print("::: Trajectories drawn")
 
 # Display the detected cars by finding 2 closest in time locations for each car
 for idRide, car_timeStamp, distanceCar in car_results:
@@ -122,6 +124,8 @@ for idRide, car_timeStamp, distanceCar in car_results:
         square = squares[tuple(min(squares.keys(), key=lambda x: geodesic((lat, lon), x).meters))]
         square[4] += np.ceil((1000 - distanceCar) / 100)
 
+print("::: Detected cars are located")
+
 # Display the crashes by adding closest in time
 for idRide, crash_timeStamp, roll, pitch, yaw in crash_results:
     if idRide in ride_timestamps:
@@ -135,23 +139,33 @@ for idRide, crash_timeStamp, roll, pitch, yaw in crash_results:
         lat, lon, _ = closest_point
         square = squares[tuple(min(squares.keys(), key=lambda x: geodesic((lat, lon), x).meters))]
         square[4] += 10
+print("::: Detected crashes are located")
 
 for square in squares.values():
-    danger_level = square[4] / num_rides
-    if danger_level > 0:
+    if square[5] == 'green':
+        danger_level = square[4] / len(square[6])
+    else:
+        continue
+
+    if danger_level > 2:
         square[5] = 'yellow'
-    if danger_level > 0.1:
+    if danger_level > 5:
         square[5] = 'orange'
-    if danger_level >= 0.3:
+    if danger_level >= 8:
         square[5] = 'red'
 
+print("::: Danger levels determined")
 
-for top_left, top_right, bottom_right, bottom_left, pints, color in squares.values():
-    folium.Polygon(locations=[top_left, top_right, bottom_right, bottom_left, top_left],
-                   color=color,
-                   fill=True,
-                   fill_opacity=0.4
-                   ).add_to(m)
+
+for top_left, top_right, bottom_right, bottom_left, points, color, set_rides in squares.values():
+    folium.Polygon(
+        locations=[top_left, top_right, bottom_right, bottom_left, top_left],
+        color=color,
+        fill=True,
+        fill_color=color,
+        fill_opacity=0.45,
+        weight=0
+    ).add_to(m)
 
 m.save("map_with_danger_levels.html")
-print("Map has been created and saved")
+print("::: Map has been created and saved")
