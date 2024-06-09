@@ -1,6 +1,6 @@
 import os
 import folium
-import pickle
+import heapq
 import numpy as np
 import mysql.connector as mysql
 from dotenv import load_dotenv
@@ -178,31 +178,85 @@ def update_map():
 
     print("::: Danger levels determined")
 
-    with open('matrix.pkl', 'wb') as file:
-        pickle.dump(matrix, file)
-    print(f"Data successfully saved to {'matrix.pkl'}")
+    # with open('matrix.pkl', 'wb') as file:
+    #     pickle.dump(matrix, file)
+    # print(f"Data successfully saved to {'matrix.pkl'}")
+    #
+    # with open('map.pkl', 'wb') as file:
+    #     pickle.dump(m, file)
+    # print(f"Map successfully saved to {'map.pkl'}")
+
+    A = (45.760000995990204, 4.841313026498142)  # lat, long
+    B = (45.77047978156445, 4.86307094324812)  # lat, long
+
+    start = find_coord(A, matrix)
+    end = find_coord(B, matrix)
+
+    print(start, end)
+
+    path = dijkstra_path(matrix, start, end)
+    print(path)
+
+    coords_path = []
+    for row, col in path:
+        coords_path.append(matrix[row][col][0])
+    folium.PolyLine(coords_path, color='#FFC0CB', weight=3.5).add_to(m)
 
     m.save("map_with_danger_levels.html")
     print("::: Map has been created and saved")
 
 
-def calculate_path():
-    with open('matrix.pkl', 'rb') as file:
-        matrix = pickle.load(file)
-    print(f"Data successfully read from {'matrix.pkl'}")
+def find_coord(point, matrix):
+    centers = [matrix[row][col][0] for row in range(len(matrix)) for col in range(len(matrix[0]))]
+    closest_center = min(centers, key=lambda x: geodesic(point, x).meters)
 
-    for row in matrix:
-        res = ''
-        for elem in row:
-            res += str(elem[1]) + " "
-        print(res)
+    for row in range(len(matrix)):
+        for col in range(len(matrix[0])):
+            if matrix[row][col][0] == closest_center:
+                return row, col
+    return None
 
-    # DIJKSTRA'S ALGORITHM HERE
+
+def dijkstra_path(grid, start, end):
+    rows, cols = len(grid), len(grid[0])
+    start_row, start_col = start
+    end_row, end_col = end
+
+    # Priority queue for Dijkstra's algorithm
+    pq = [(0, start_row, start_col)]
+
+    # Distance dictionary to store the minimum distance to each cell
+    dist = {(i, j): float('inf') for i in range(rows) for j in range(cols)}
+    dist[(start_row, start_col)] = 0
+
+    parent = {(i, j): None for i in range(rows) for j in range(cols)}
+
+    directions = [(-1, 0), (1, 0), (0, -1), (0, 1), (1, 1), (-1, 1), (1, -1), (-1, -1)]
+
+    while pq:
+        current_dist, current_row, current_col = heapq.heappop(pq)
+
+        # If we reached the end cell, reconstruct the path
+        if (current_row, current_col) == (end_row, end_col):
+            path = []
+            while (current_row, current_col) != start:
+                path.append((current_row, current_col))
+                current_row, current_col = parent[(current_row, current_col)]
+            path.append(start)
+            return path[::-1]
+
+        for direction in directions:
+            next_row, next_col = current_row + direction[0], current_col + direction[1]
+            if 0 <= next_row < rows and 0 <= next_col < cols:
+                if grid[next_row][next_col][1] != -1:  # Ignore cells with weight -1
+                    new_dist = current_dist + grid[next_row][next_col][1] + 3
+                    if new_dist < dist[(next_row, next_col)]:
+                        dist[(next_row, next_col)] = new_dist
+                        parent[(next_row, next_col)] = (current_row, current_col)
+                        heapq.heappush(pq, (new_dist, next_row, next_col))
+
+    return None
 
 
 if __name__ == "__main__":
-    update = False
-    if update is True:
-        update_map()
-    else:
-        calculate_path()
+    update_map()
