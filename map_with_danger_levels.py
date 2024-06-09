@@ -166,15 +166,6 @@ def update_map():
 
         matrix[square[7]][square[8]][1] = danger_level
 
-
-    """      
-    # HERE IS THE PLACE TO INSERT DIJKSTRA'S ALGORITHM
-    # use values of matrix[row][col][1]
-    # NOTICE THE INDEX 1, WITH INDEX OF THE CENTER MARK THE SQUARES WE NEED TO VISIT
-    # UNVISITED SQUARES ARE EQUAL TO -1
-    """
-
-
     for square in squares.values():
         folium.Polygon(
             locations=[square[0], square[1], square[2], square[3], square[0]],
@@ -205,6 +196,8 @@ def calculate_path():
         for elem in row:
             res += str(elem[1]) + " "
         print(res)
+
+    # DIJKSTRA'S ALGORITHM HERE
 
 
 if __name__ == "__main__":
