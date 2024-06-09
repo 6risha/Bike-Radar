@@ -71,9 +71,12 @@ lon_step = 0.0036
 lat_points = np.arange(min_lat, max_lat, lat_step)
 lon_points = np.arange(min_lon, max_lon, lon_step)
 
+# We need the matrix to easily run the dijkstra's algorithm
+matrix = np.empty((len(lon_points), len(lat_points)), dtype=object)
 squares = {}
-for lat in lat_points:
-    for lon in lon_points:
+
+for col, lat in enumerate(lat_points):
+    for row, lon in enumerate(lon_points):
         top_left = (lat, lon)
         top_right = (lat, lon + lon_step)
         bottom_left = (lat + lat_step, lon)
@@ -83,10 +86,14 @@ for lat in lat_points:
         center_lon = lon + lon_step / 2
         center_point = (center_lat, center_lon)
 
+        matrix[row][col] = [center_point, 0]
+
         # coordinates, points, color, amount of rides passed through this square
-        square = [top_left, top_right, bottom_right, bottom_left, 0, 'grey', set()]
+        square = [top_left, top_right, bottom_right, bottom_left, 0, 'grey', set(), row, col]
         squares[center_point] = square
         # folium.CircleMarker(location=center_point, radius=2, color='red', fill=True, fill_opacity=1).add_to(m)
+
+
 print("::: Grid created")
 
 # "locations" is for display, "ride_timestamps" of for the following analysis
@@ -145,7 +152,7 @@ for square in squares.values():
     if square[5] == 'green':
         danger_level = square[4] / len(square[6])
     else:
-        continue
+        danger_level = -1
 
     if danger_level > 2:
         square[5] = 'yellow'
@@ -154,18 +161,34 @@ for square in squares.values():
     if danger_level >= 8:
         square[5] = 'red'
 
-print("::: Danger levels determined")
+    matrix[square[7]][square[8]][1] = danger_level
 
 
-for top_left, top_right, bottom_right, bottom_left, points, color, set_rides in squares.values():
+"""      
+# HERE IS THE PLACE TO INSERT DIJKSTRA'S ALGORITHM
+# use values of matrix[row][col][1]
+# NOTICE THE INDEX 1, WITH INDEX OF THE CENTER MARK THE SQUARES WE NEED TO VISIT
+# UNVISITED SQUARES ARE EQUAL TO -1
+"""
+
+
+for square in squares.values():
     folium.Polygon(
-        locations=[top_left, top_right, bottom_right, bottom_left, top_left],
-        color=color,
+        locations=[square[0], square[1], square[2], square[3], square[0]],
+        color=square[5],
         fill=True,
-        fill_color=color,
+        fill_color=square[5],
         fill_opacity=0.45,
         weight=0
     ).add_to(m)
+
+print("::: Danger levels determined")
+
+for row in matrix:
+    res = ''
+    for elem in row:
+        res += str(elem[1]) + " "
+    print(res)
 
 m.save("map_with_danger_levels.html")
 print("::: Map has been created and saved")
