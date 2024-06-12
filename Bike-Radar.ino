@@ -14,7 +14,7 @@ String mode = "night";
 
 // definitions for bluetooth
 bool rideStarted = false;
-const int message_delay = 300;
+const int message_delay = 350;
 
 // definitions for distance measurement
 Ultrasonic ultrasonic(7);
@@ -44,7 +44,7 @@ float deltat;
 float yaw0 = 0.0;
 float pitch0 = 0.0; 
 float roll0 = 0.0;
-int cst = 80;
+int cst = 25;
 int check = 200;
 int count = 0;
 
@@ -257,21 +257,25 @@ void measureAndSendAngles() {
     displayAnglesData();
   #endif
 
-  if ((yaw - yaw0 > cst) or (yaw - yaw0 < -cst) or (pitch - pitch0 > cst) or (pitch - pitch0 < -cst)) {
+  if ((yaw - yaw0 > cst) or (yaw - yaw0 < -cst) or (pitch - pitch0 > cst) or (pitch - pitch0 < -cst) or (roll - roll0 > cst) or (roll - roll0 < -cst)){
     // or (roll - roll0 > cst) or (roll - roll0 < -cst)
-    if (count >=1) {
+    if (count >=2) {
       int d1 = int(yaw - yaw0);
       int d2 = int(pitch - pitch0);
       int d3 = int(roll - roll0);
-      if ((d1 < check) or (d1 > -check) or (d2 < check) or (d2 > -check) or (d3 < check) or (d3 > -check)) {
+      if ((d1 < check) && (d1 > -check) && (d2 < check) && (d2 > -check) && (d3 < check) && (d3 > -check)) {
         // Send in order ROLL PITCH YAW
         String res = "C;" + String(d3) + ";" + String(d2) + ";" + String(d1);
         Serial1.write(res.c_str());
         Serial.println(res);
         delay(message_delay);
       }
-    count++;
+      // String res = "C;" + String(d3) + ";" + String(d2) + ";" + String(d1);
+      // Serial1.write(res.c_str());
+      // Serial.println(res);
+      // delay(message_delay);
     }
+    count++;
   }
 }
 
